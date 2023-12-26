@@ -20,7 +20,30 @@ Token TokenStream::GetToken() {
     if (this->is_full_) {
         return this->buffer_;
     }
-    return Token{};
+    Token t{};
+
+    char c = 'u';
+    std::cin >> c;
+    switch (c) {
+        case '0': case '1': case '2': case '3': case '4':
+        case '5': case '6': case '7': case '8': case '9': {
+            double val = 0;
+            std::cin.putback(c);
+            std::cin >> val;
+
+            t.kind_     = '#';
+            t.value_    = val;
+            break;
+        }
+        case '+': case '-': case '/': case '*': 
+        case '=': case '(': case ')': case 'q':
+            t.kind_ = c;
+            break;
+        default:
+            std::cerr << "Throw an unknown token error." << std::endl;
+            break;
+    }
+    return t;
 }
 
 void TokenStream::PutBack(Token t) {
@@ -94,5 +117,8 @@ double Expression() {
 int main() {
     std::cout << "Project Condor: Arithmetic Calculator v1." << std::endl;
     std::cout << "Enter an expression below and end with = to evaluate." << std::endl;
+    while (std::cin) {
+        
+    }
     return 0;
 }
