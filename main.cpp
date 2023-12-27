@@ -1,5 +1,7 @@
 #include <iostream>
 
+#include "std_lib_facilities.h"
+
 class Token {
 public:
     char    kind_{'u'}; // 'u' for uninitialized
@@ -16,46 +18,49 @@ public:
     void    PutBack(Token t);
 };
 
+TokenStream t_stream{};
+
 Token TokenStream::GetToken() {
     if (this->is_full_) {
+        this->is_full_ = false;
         return this->buffer_;
     }
-    Token t{};
+    
+    Token token{};
 
-    char c = 'u';
-    std::cin >> c;
-    switch (c) {
+    char ch = 'u';
+    std::cin >> ch;
+    switch (ch) {
         case '0': case '1': case '2': case '3': case '4':
         case '5': case '6': case '7': case '8': case '9': {
             double val = 0;
-            std::cin.putback(c);
+            std::cin.putback(ch);
             std::cin >> val;
 
-            t.kind_     = '#';
-            t.value_    = val;
+            token.kind_     = '#';
+            token.value_    = val;
             break;
         }
         case '+': case '-': case '/': case '*': 
         case '=': case '(': case ')': case 'q':
-            t.kind_ = c;
+            token.kind_ = ch;
             break;
         default:
-            std::cerr << "Throw an unknown token error." << std::endl;
+            error("Unknown token.");
             break;
     }
-    return t;
+    return token;
 }
 
-void TokenStream::PutBack(Token t) {
+void TokenStream::PutBack(Token token) {
     if (this->is_full_) {
-        std::cerr << "Throw an error: putting back into full buffer." << std::endl;
+        error("Token buffer already full.");
         return;
     }
-    this->buffer_ = t;
+    this->buffer_ = token;
+    this->is_full_ = true;
     return;
 }
-
-TokenStream t_stream{};
 
 double Primary();
 double Term();
@@ -63,62 +68,84 @@ double Expression();
 
 double Primary() {
     double val = 0;
-    Token t = t_stream.GetToken();
-    switch (t.kind_) {
-    case '#':
-        return t.value_;
-        break;
-    case '(':
-        val = Expression();
-        t = t_stream.GetToken();
-        if (t.kind_ != ')') {
-            std::cerr << "Throw an error, we didn't get a close bracket" << std::endl;
-            return 0;
-        }
-        return val;
-        break;
-    }
-}
-
-double Term() {
-    double val = Primary();
-    double p = 0;
-    Token t = t_stream.GetToken();
-    switch (t.kind_) {
-    case '*':
-        val *= Primary();
-        break;
-    case '/':
-        p = Primary();
-        if (p == 0) {
-            std::cerr << "Divide by 0 error" << std::endl;
-            return 0;
-        }
-        val /= p;
-    }
-}
-
-double Expression() {
-    double val = Term();
-    Token t = t_stream.GetToken();
-    switch (t.kind_) {
-        case '+':
-            val += Term();
+    Token token = t_stream.GetToken();
+    switch (token.kind_) {
+        case '#':
+            val = token.value_;
             break;
-        case '-':
-            val -= Term();
+        case '(': {
+            val = Expression();
+            token = t_stream.GetToken();
+            if (token.kind_ != ')') {
+                error("Invalid primary, did not receive closing bracket.");
+            }
             break;
+        }
         default:
             break;
     }
     return val;
 }
 
+double Term() {
+    double term = Primary();
+    Token token = t_stream.GetToken();
+    while (true) {
+        switch (token.kind_) {
+            case '*':
+                term *= Primary();
+                token = t_stream.GetToken();
+                break;
+            case '/': {
+                double p = Primary();
+                if (p == 0) {
+                    error("Cannot divide by zero.");
+                }
+                term /= p;
+                token = t_stream.GetToken();
+                break;
+            }
+            default:
+                t_stream.PutBack(token);
+                return term;
+                break;
+        }
+    }
+}
+
+double Expression() {
+    double expression = Term();
+    Token token = t_stream.GetToken();
+    while (true) {
+        switch (token.kind_) {
+            case '+':
+                expression += Term();
+                token = t_stream.GetToken();
+                break;
+            case '-':
+                expression -= Term();
+                token = t_stream.GetToken();
+                break;
+            default:
+                t_stream.PutBack(token);
+                return expression;
+                break;
+        }
+    }
+}
+
 int main() {
     std::cout << "Project Condor: Arithmetic Calculator v1." << std::endl;
-    std::cout << "Enter an expression below and end with = to evaluate." << std::endl;
+    double val{0};
     while (std::cin) {
-        
+        val = Expression();
+        Token token = t_stream.GetToken();
+        if (token.kind_ == 'q') break;
+        if (token.kind_ == '=') {
+            std::cout << "=" << val << std::endl;
+        } else {
+            t_stream.PutBack(token);
+        }
     }
     return 0;
 }
