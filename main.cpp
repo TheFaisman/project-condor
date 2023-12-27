@@ -31,6 +31,7 @@ Token TokenStream::GetToken() {
     char ch = 'u';
     std::cin >> ch;
     switch (ch) {
+        case '.':
         case '0': case '1': case '2': case '3': case '4':
         case '5': case '6': case '7': case '8': case '9': {
             double val = 0;
@@ -41,6 +42,7 @@ Token TokenStream::GetToken() {
             token.value_    = val;
             break;
         }
+        case '{': case '}':
         case '+': case '-': case '/': case '*': 
         case '=': case '(': case ')': case 'q':
             token.kind_ = ch;
@@ -77,7 +79,15 @@ double Primary() {
             val = Expression();
             token = t_stream.GetToken();
             if (token.kind_ != ')') {
-                error("Invalid primary, did not receive closing bracket.");
+                error("Invalid primary, ')' expected.");
+            }
+            break;
+        }
+        case '{': {
+            val = Expression();
+            token = t_stream.GetToken();
+            if (token.kind_ != '}') {
+                error("Invalid primary, '}' expected.");
             }
             break;
         }
@@ -138,7 +148,6 @@ int main() {
     std::cout << "Project Condor: Arithmetic Calculator v1." << std::endl;
     double val{0};
     while (std::cin) {
-        val = Expression();
         Token token = t_stream.GetToken();
         if (token.kind_ == 'q') break;
         if (token.kind_ == '=') {
@@ -146,6 +155,7 @@ int main() {
         } else {
             t_stream.PutBack(token);
         }
+        val = Expression();
     }
     return 0;
 }
