@@ -42,7 +42,7 @@ Token TokenStream::GetToken() {
             token.value_    = val;
             break;
         }
-        case '{': case '}':
+        case '{': case '}': case '!':
         case '+': case '-': case '/': case '*': 
         case '=': case '(': case ')': case 'q':
             token.kind_ = ch;
@@ -68,6 +68,14 @@ double Primary();
 double Term();
 double Expression();
 
+uint32_t Factorial(uint32_t x) {
+    uint32_t i = 1;
+    while (x > 0) {
+        i *= x--;
+    }
+    return i;
+}
+
 double Primary() {
     double val = 0;
     Token token = t_stream.GetToken();
@@ -88,11 +96,19 @@ double Primary() {
             token = t_stream.GetToken();
             if (token.kind_ != '}') {
                 error("Invalid primary, '}' expected.");
-            }
+            }         
             break;
         }
         default:
+            t_stream.PutBack(token);
             break;
+    }
+    // Check for factorial after the primary
+    token = t_stream.GetToken();
+    if (token.kind_ == '!') {
+        val = Factorial(static_cast<uint32_t>(val));
+    } else {
+        t_stream.PutBack(token);
     }
     return val;
 }
