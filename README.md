@@ -18,4 +18,6 @@ Term:
 
 Primary:
 - Number
+- Number "!"
 - "(" Expression ")"
+- "(" Expression ")" "!"
