@@ -14,7 +14,6 @@ Term:
 - Primary
 - Term * Primary
 - Term / Primary
-- Term % Primary
 
 Primary:
 - Number
